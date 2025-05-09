@@ -2,8 +2,11 @@ import {
   type User, type InsertUser, 
   type Station, type InsertStation,
   type Bike, type InsertBike,
-  type Rental, type InsertRental 
+  type Rental, type InsertRental,
+  users, stations, bikes, rentals 
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 import { format, addDays } from "date-fns";
 
 // Interface for storage operations
@@ -32,293 +35,41 @@ export interface IStorage {
   createRental(rental: InsertRental): Promise<Rental>;
 }
 
-// In-memory storage implementation
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private stations: Map<number, Station>;
-  private bikes: Map<number, Bike>;
-  private rentals: Map<number, Rental>;
-  
-  private userIdCounter: number;
-  private stationIdCounter: number;
-  private bikeIdCounter: number;
-  private rentalIdCounter: number;
-
-  constructor() {
-    this.users = new Map();
-    this.stations = new Map();
-    this.bikes = new Map();
-    this.rentals = new Map();
-    
-    this.userIdCounter = 1;
-    this.stationIdCounter = 1;
-    this.bikeIdCounter = 1;
-    this.rentalIdCounter = 1;
-    
-    // Initialize with sample data
-    this.initSampleData();
-  }
-
-  private initSampleData() {
-    // Create sample user
-    const sampleUser: User = {
-      id: this.userIdCounter++,
-      username: "joaosilva",
-      password: "password123",
-      fullName: "João Silva",
-      email: "joao.silva@email.com",
-      memberSince: new Date().toISOString()
-    };
-    this.users.set(sampleUser.id, sampleUser);
-    
-    // Create sample stations
-    const stations: Station[] = [
-      {
-        id: this.stationIdCounter++,
-        name: "Estação Paulista",
-        address: "Av. Paulista, 1578",
-        lat: "-23.562305",
-        lng: "-46.654891",
-        availableBikes: 8,
-        totalDocks: 12,
-        openingTime: "6:00",
-        closingTime: "22:00",
-        distance: "400m",
-        walkingTime: "5 min caminhando",
-        imageUrl: "https://pixabay.com/get/g2995bae173ba5bec8b41ce922ebb72a59e0526ebb5bf1e7fd9d6b76611a8969ecd846d0f197fc6d05370783477075e1e5bbb392a38e21577bb96169a580030b3_1280.jpg"
-      },
-      {
-        id: this.stationIdCounter++,
-        name: "Estação Ibirapuera",
-        address: "Parque Ibirapuera, Portão 3",
-        lat: "-23.587677",
-        lng: "-46.657275",
-        availableBikes: 12,
-        totalDocks: 20,
-        openingTime: "6:00",
-        closingTime: "20:00",
-        distance: "1.2km",
-        walkingTime: "15 min caminhando",
-        imageUrl: "https://pixabay.com/get/g2995bae173ba5bec8b41ce922ebb72a59e0526ebb5bf1e7fd9d6b76611a8969ecd846d0f197fc6d05370783477075e1e5bbb392a38e21577bb96169a580030b3_1280.jpg"
-      },
-      {
-        id: this.stationIdCounter++,
-        name: "Estação Pinheiros",
-        address: "Rua dos Pinheiros, 854",
-        lat: "-23.566030",
-        lng: "-46.681942",
-        availableBikes: 0,
-        totalDocks: 10,
-        openingTime: "6:00",
-        closingTime: "22:00",
-        distance: "2.5km",
-        walkingTime: "30 min caminhando",
-        imageUrl: "https://pixabay.com/get/g2995bae173ba5bec8b41ce922ebb72a59e0526ebb5bf1e7fd9d6b76611a8969ecd846d0f197fc6d05370783477075e1e5bbb392a38e21577bb96169a580030b3_1280.jpg"
-      },
-      {
-        id: this.stationIdCounter++,
-        name: "Estação República",
-        address: "Praça da República, 120",
-        lat: "-23.542778",
-        lng: "-46.642508",
-        availableBikes: 5,
-        totalDocks: 15,
-        openingTime: "6:00",
-        closingTime: "22:00",
-        distance: "1.5km",
-        walkingTime: "18 min caminhando",
-        imageUrl: "https://pixabay.com/get/g2995bae173ba5bec8b41ce922ebb72a59e0526ebb5bf1e7fd9d6b76611a8969ecd846d0f197fc6d05370783477075e1e5bbb392a38e21577bb96169a580030b3_1280.jpg"
-      },
-      {
-        id: this.stationIdCounter++,
-        name: "Estação Vila Madalena",
-        address: "Rua Fradique Coutinho, 320",
-        lat: "-23.552775",
-        lng: "-46.689884",
-        availableBikes: 3,
-        totalDocks: 8,
-        openingTime: "6:00",
-        closingTime: "22:00",
-        distance: "3.2km",
-        walkingTime: "38 min caminhando",
-        imageUrl: "https://pixabay.com/get/g2995bae173ba5bec8b41ce922ebb72a59e0526ebb5bf1e7fd9d6b76611a8969ecd846d0f197fc6d05370783477075e1e5bbb392a38e21577bb96169a580030b3_1280.jpg"
-      }
-    ];
-    
-    stations.forEach(station => {
-      this.stations.set(station.id, station);
-    });
-    
-    // Create sample bikes for Paulista station
-    const paulistaBikes: Bike[] = [
-      {
-        id: this.bikeIdCounter++,
-        name: "Bike Urbana #103",
-        description: "Aro 26, 7 marchas",
-        type: "Urbana",
-        batteryLevel: 98,
-        wheelSize: "26\"",
-        gears: "7 velocidades",
-        lastMaintenance: "23/10/2023",
-        condition: "Excelente",
-        imageUrl: "https://images.unsplash.com/photo-1559348349-86f1f65817fe?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=500",
-        stationId: 1
-      },
-      {
-        id: this.bikeIdCounter++,
-        name: "Bike Elétrica #058",
-        description: "Aro 26, motor 250W",
-        type: "Elétrica",
-        batteryLevel: 75,
-        wheelSize: "26\"",
-        gears: "7 velocidades",
-        lastMaintenance: "15/10/2023",
-        condition: "Boa",
-        imageUrl: "https://images.unsplash.com/photo-1571068316344-75bc76f77890?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=500",
-        stationId: 1
-      },
-      {
-        id: this.bikeIdCounter++,
-        name: "Bike Urbana #217",
-        description: "Aro 29, 21 marchas",
-        type: "Urbana",
-        batteryLevel: 100,
-        wheelSize: "29\"",
-        gears: "21 velocidades",
-        lastMaintenance: "20/10/2023",
-        condition: "Excelente",
-        imageUrl: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=500",
-        stationId: 1
-      }
-    ];
-    
-    paulistaBikes.forEach(bike => {
-      this.bikes.set(bike.id, bike);
-    });
-    
-    // Create sample bikes for Ibirapuera station
-    const ibirapoeraBikes: Bike[] = [
-      {
-        id: this.bikeIdCounter++,
-        name: "Bike Urbana #125",
-        description: "Aro 26, 7 marchas",
-        type: "Urbana",
-        batteryLevel: 95,
-        wheelSize: "26\"",
-        gears: "7 velocidades",
-        lastMaintenance: "20/10/2023",
-        condition: "Excelente",
-        imageUrl: "https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=500",
-        stationId: 2
-      },
-      {
-        id: this.bikeIdCounter++,
-        name: "Bike Elétrica #073",
-        description: "Aro 26, motor 350W",
-        type: "Elétrica",
-        batteryLevel: 85,
-        wheelSize: "26\"",
-        gears: "7 velocidades",
-        lastMaintenance: "18/10/2023",
-        condition: "Excelente",
-        imageUrl: "https://images.unsplash.com/photo-1557687780-6bfbf53c5B00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=500",
-        stationId: 2
-      }
-    ];
-    
-    ibirapoeraBikes.forEach(bike => {
-      this.bikes.set(bike.id, bike);
-    });
-    
-    // Create sample rentals
-    const sampleRentals: Rental[] = [
-      {
-        id: this.rentalIdCounter++,
-        userId: 1,
-        bikeId: 2,
-        stationId: 1,
-        planId: 2,
-        startTime: format(addDays(new Date(), -5), "yyyy-MM-dd'T'HH:mm:ss"),
-        endTime: format(addDays(new Date(), -4), "yyyy-MM-dd'T'HH:mm:ss"),
-        price: "R$ 30,00",
-        status: "completed"
-      },
-      {
-        id: this.rentalIdCounter++,
-        userId: 1,
-        bikeId: 4,
-        stationId: 2,
-        planId: 1,
-        startTime: format(addDays(new Date(), -2), "yyyy-MM-dd'T'HH:mm:ss"),
-        endTime: format(addDays(new Date(), -2), "yyyy-MM-dd'T'HH:mm:ss"),
-        price: "R$ 8,00",
-        status: "completed"
-      },
-      {
-        id: this.rentalIdCounter++,
-        userId: 1,
-        bikeId: 1,
-        stationId: 1,
-        planId: 2,
-        startTime: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-        endTime: format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm:ss"),
-        price: "R$ 30,00",
-        status: "active"
-      }
-    ];
-    
-    sampleRentals.forEach(rental => {
-      this.rentals.set(rental.id, rental);
-    });
-  }
-
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const user: User = { 
-      ...userData, 
-      id,
-      memberSince: new Date().toISOString()
-    };
-    
-    this.users.set(id, user);
-    return user;
+    const result = await db.insert(users).values(userData).returning();
+    return result[0];
   }
 
   // Station operations
   async getStations(): Promise<Station[]> {
-    return Array.from(this.stations.values());
+    return await db.select().from(stations);
   }
 
   async getStation(id: number): Promise<Station | undefined> {
-    return this.stations.get(id);
+    const result = await db.select().from(stations).where(eq(stations.id, id));
+    return result[0];
   }
 
   async createStation(stationData: InsertStation): Promise<Station> {
-    const id = this.stationIdCounter++;
-    const station: Station = { 
-      ...stationData, 
-      id,
-      distance: "0m",
-      walkingTime: "0 min"
-    };
-    
-    this.stations.set(id, station);
-    return station;
+    const result = await db.insert(stations).values(stationData).returning();
+    return result[0];
   }
 
   async decreaseStationBikes(id: number): Promise<Station> {
-    const station = this.stations.get(id);
+    const station = await this.getStation(id);
     
     if (!station) {
       throw new Error(`Station with id ${id} not found`);
@@ -328,51 +79,46 @@ export class MemStorage implements IStorage {
       throw new Error(`No bikes available at station ${id}`);
     }
     
-    const updatedStation = {
-      ...station,
-      availableBikes: station.availableBikes - 1
-    };
+    const result = await db
+      .update(stations)
+      .set({ availableBikes: station.availableBikes - 1 })
+      .where(eq(stations.id, id))
+      .returning();
     
-    this.stations.set(id, updatedStation);
-    return updatedStation;
+    return result[0];
   }
 
   // Bike operations
   async getBikes(): Promise<Bike[]> {
-    return Array.from(this.bikes.values());
+    return await db.select().from(bikes);
   }
 
   async getBike(id: number): Promise<Bike | undefined> {
-    return this.bikes.get(id);
+    const result = await db.select().from(bikes).where(eq(bikes.id, id));
+    return result[0];
   }
 
   async getBikesByStation(stationId: number): Promise<Bike[]> {
-    return Array.from(this.bikes.values()).filter(
-      (bike) => bike.stationId === stationId
-    );
+    return await db.select().from(bikes).where(eq(bikes.stationId, stationId));
   }
 
   async createBike(bikeData: InsertBike): Promise<Bike> {
-    const id = this.bikeIdCounter++;
-    const bike: Bike = { ...bikeData, id };
-    
-    this.bikes.set(id, bike);
-    return bike;
+    const result = await db.insert(bikes).values(bikeData).returning();
+    return result[0];
   }
 
   // Rental operations
   async getRentals(): Promise<Rental[]> {
-    return Array.from(this.rentals.values());
+    return await db.select().from(rentals);
   }
 
   async getRental(id: number): Promise<Rental | undefined> {
-    return this.rentals.get(id);
+    const result = await db.select().from(rentals).where(eq(rentals.id, id));
+    return result[0];
   }
 
   async getRentalsByUser(userId: number): Promise<Rental[]> {
-    return Array.from(this.rentals.values()).filter(
-      (rental) => rental.userId === userId
-    );
+    return await db.select().from(rentals).where(eq(rentals.userId, userId));
   }
 
   async createRental(rentalData: InsertRental): Promise<Rental> {
@@ -416,35 +162,33 @@ export class MemStorage implements IStorage {
         break;
     }
     
-    const id = this.rentalIdCounter++;
-    const startTime = format(new Date(), "yyyy-MM-dd'T'HH:mm:ss");
-    
-    // Enhanced rental object with display fields
-    const rental: Rental & { 
-      bikeName: string;
-      stationName: string;
-      planName: string;
-    } = {
+    // Create the rental record
+    const result = await db.insert(rentals).values({
       ...rentalData,
-      id,
-      startTime,
+      status: "active",
       price,
+      startTime: new Date(),
+    }).returning();
+    
+    const rental = result[0];
+    
+    // Decrease available bikes at the station
+    await this.decreaseStationBikes(rentalData.stationId);
+    
+    // Enhanced rental for display
+    const displayRental = {
+      ...rental,
       bikeName: bike.name,
       stationName: station.name,
       planName,
-    } as any;
-    
-    this.rentals.set(id, rental);
-    
-    // Format start and end times for display
-    const formattedRental = {
-      ...rental,
-      startTime: format(new Date(rental.startTime), "dd/MM/yyyy, HH:mm"),
-      endTime: format(new Date(rental.endTime), "dd/MM/yyyy, HH:mm"),
+      // Keep the original Date objects but add formatted versions for display
+      startTimeFormatted: format(new Date(rental.startTime), "dd/MM/yyyy, HH:mm"),
+      endTimeFormatted: format(new Date(rental.endTime), "dd/MM/yyyy, HH:mm"),
     };
     
-    return formattedRental as Rental;
+    return displayRental as unknown as Rental;
   }
 }
 
-export const storage = new MemStorage();
+// Initialize the database storage
+export const storage = new DatabaseStorage();

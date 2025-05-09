@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, foreignKey } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -75,7 +76,41 @@ export const rentals = pgTable("rentals", {
 export const insertRentalSchema = createInsertSchema(rentals).omit({
   id: true,
   startTime: true,
+  status: true,
 });
+
+// Define relations after all tables are defined to avoid circular references
+export const usersRelations = relations(users, ({ many }) => ({
+  rentals: many(rentals),
+}));
+
+export const stationsRelations = relations(stations, ({ many }) => ({
+  bikes: many(bikes),
+  rentals: many(rentals),
+}));
+
+export const bikesRelations = relations(bikes, ({ one, many }) => ({
+  station: one(stations, {
+    fields: [bikes.stationId],
+    references: [stations.id],
+  }),
+  rentals: many(rentals),
+}));
+
+export const rentalsRelations = relations(rentals, ({ one }) => ({
+  user: one(users, {
+    fields: [rentals.userId],
+    references: [users.id],
+  }),
+  bike: one(bikes, {
+    fields: [rentals.bikeId],
+    references: [bikes.id],
+  }),
+  station: one(stations, {
+    fields: [rentals.stationId],
+    references: [stations.id],
+  }),
+}));
 
 // Type definitions
 export type User = typeof users.$inferSelect;

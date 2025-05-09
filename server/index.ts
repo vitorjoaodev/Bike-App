@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initializeDatabase } from "./initDb";
+import { db } from "./db";
 
 const app = express();
 app.use(express.json());
@@ -36,6 +38,23 @@ app.use((req, res, next) => {
   next();
 });
 
+// Check if database is empty and initialize with sample data if needed
+async function checkAndInitializeDatabase() {
+  try {
+    // Check if the database has any users
+    const users = await db.query.users.findMany({ limit: 1 });
+    
+    if (users.length === 0) {
+      log("Database appears to be empty. Initializing with sample data...");
+      await initializeDatabase();
+    } else {
+      log("Database already contains data. Skipping initialization.");
+    }
+  } catch (error) {
+    console.error("Error checking or initializing database:", error);
+  }
+}
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -46,6 +65,9 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
+
+  // Check and initialize database
+  await checkAndInitializeDatabase();
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
