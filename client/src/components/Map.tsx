@@ -1,183 +1,151 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Station } from "@/types";
 import { useQuery } from "@tanstack/react-query";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet icon issue
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// Fix default icon issue
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Custom bike station icon
+const BikeStationIcon = (availableBikes: number) => L.divIcon({
+  className: 'custom-div-icon',
+  html: `
+    <div class="flex flex-col items-center">
+      <div class="w-10 h-10 rounded-full ${availableBikes > 0 ? 'bg-secondary' : 'bg-destructive'} 
+           flex items-center justify-center text-white font-medium shadow-lg transform transition-transform hover:scale-110">
+        ${availableBikes}
+      </div>
+    </div>
+  `,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20]
+});
+
+// Component to recenter map on user location
+function LocationMarker({ onLocationFound }: { onLocationFound: (lat: number, lng: number) => void }) {
+  const [position, setPosition] = useState<[number, number] | null>(null);
+  const map = useMap();
+
+  useEffect(() => {
+    map.locate({ setView: true, maxZoom: 15 });
+    
+    const handleLocationFound = (e: L.LocationEvent) => {
+      setPosition([e.latlng.lat, e.latlng.lng]);
+      onLocationFound(e.latlng.lat, e.latlng.lng);
+    };
+
+    map.on('locationfound', handleLocationFound);
+
+    return () => {
+      map.off('locationfound', handleLocationFound);
+    };
+  }, [map, onLocationFound]);
+
+  return position === null ? null : (
+    <Marker 
+      position={position} 
+    >
+      <Popup>Você está aqui</Popup>
+    </Marker>
+  );
+}
+
+// Map Controller component
+function MapController({ mapRef, setMapRef }: { mapRef: L.Map | null, setMapRef: React.Dispatch<React.SetStateAction<L.Map | null>> }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    setMapRef(map);
+  }, [map, setMapRef]);
+  
+  return null;
+}
 
 type MapProps = {
   onStationSelect: (station: Station) => void;
 };
 
 export default function Map({ onStationSelect }: MapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<{ [key: number]: google.maps.Marker }>({});
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null);
+  const [mapRef, setMapRef] = useState<L.Map | null>(null);
 
+  // São Paulo coordinates
+  const saoPaulo: [number, number] = [-23.550520, -46.633308];
+  
   const { data: stations = [] } = useQuery<Station[]>({
     queryKey: ['/api/stations'],
   });
 
-  useEffect(() => {
-    // Initialize Google Map
-    if (mapRef.current && !googleMapRef.current) {
-      // São Paulo coordinates
-      const saoPaulo = { lat: -23.550520, lng: -46.633308 };
-      
-      googleMapRef.current = new google.maps.Map(mapRef.current, {
-        center: saoPaulo,
-        zoom: 13,
-        disableDefaultUI: true,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "off" }],
-          },
-        ],
-      });
-
-      // Try to get user's location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const pos = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            
-            setUserLocation(pos);
-            googleMapRef.current?.setCenter(pos);
-          },
-          (error) => {
-            console.error("Error getting user location:", error);
-          }
-        );
-      }
-    }
+  const handleLocationFound = useCallback((lat: number, lng: number) => {
+    setUserLocation({ lat, lng });
   }, []);
 
-  // Add/update station markers when stations data changes
-  useEffect(() => {
-    if (!googleMapRef.current || !stations.length) return;
-
-    // Clear existing markers
-    Object.values(markersRef.current).forEach(marker => marker.setMap(null));
-    markersRef.current = {};
-
-    stations.forEach(station => {
-      if (!googleMapRef.current) return;
-
-      // Create custom marker element
-      const markerElement = document.createElement('div');
-      markerElement.className = 'station-marker';
-      markerElement.innerHTML = `
-        <div class="flex flex-col items-center">
-          <div class="w-10 h-10 rounded-full ${station.availableBikes > 0 ? 'bg-secondary' : 'bg-destructive'} 
-               flex items-center justify-center text-white font-medium shadow-lg">
-            ${station.availableBikes}
-          </div>
-          <div class="bg-white dark:bg-zinc-800 text-xs font-medium px-2 py-1 rounded mt-1 shadow">
-            ${station.name.split(' ')[1]}
-          </div>
-        </div>
-      `;
-
-      // Create the marker
-      const marker = new google.maps.Marker({
-        position: { lat: station.lat, lng: station.lng },
-        map: googleMapRef.current,
-        icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-            '<svg width="1" height="1" xmlns="http://www.w3.org/2000/svg"></svg>'
-          ),
-          scaledSize: new google.maps.Size(1, 1),
-        },
+  const centerOnUserLocation = useCallback(() => {
+    if (userLocation && mapRef) {
+      mapRef.setView([userLocation.lat, userLocation.lng], 15, {
+        animate: true,
+        duration: 1
       });
-
-      // Create overlay for custom HTML marker
-      const overlay = new google.maps.OverlayView();
-      overlay.setMap(googleMapRef.current);
-      
-      overlay.onAdd = function() {
-        const div = document.createElement('div');
-        div.style.position = 'absolute';
-        div.appendChild(markerElement);
-        this.getPanes()?.overlayMouseTarget.appendChild(div);
-
-        google.maps.event.addDomListener(div, 'click', () => {
-          onStationSelect(station);
-        });
-
-        overlay.draw = function() {
-          const projection = this.getProjection();
-          if (!projection) return;
-          
-          const position = projection.fromLatLngToDivPixel(marker.getPosition() as google.maps.LatLng);
-          if (!position) return;
-          
-          div.style.left = (position.x) + 'px';
-          div.style.top = (position.y) + 'px';
-        };
-      };
-
-      markersRef.current[station.id] = marker;
-    });
-
-    // Update user marker if location exists
-    if (userLocation) {
-      if (userMarker) {
-        userMarker.setPosition(userLocation);
-      } else {
-        const newUserMarker = new google.maps.Marker({
-          position: userLocation,
-          map: googleMapRef.current,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 7,
-            fillColor: "#4285F4",
-            fillOpacity: 1,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 2,
-          },
-          zIndex: 999,
-        });
-        setUserMarker(newUserMarker);
-      }
+    } else if (mapRef) {
+      mapRef.locate({ setView: true, maxZoom: 15 });
     }
-  }, [stations, onStationSelect, userLocation]);
-
-  const centerOnUserLocation = () => {
-    if (userLocation && googleMapRef.current) {
-      googleMapRef.current.panTo(userLocation);
-      googleMapRef.current.setZoom(15);
-    } else if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const pos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          
-          setUserLocation(pos);
-          if (googleMapRef.current) {
-            googleMapRef.current.setCenter(pos);
-            googleMapRef.current.setZoom(15);
-          }
-        },
-        (error) => {
-          console.error("Error getting user location:", error);
-        }
-      );
-    }
-  };
+  }, [userLocation, mapRef]);
 
   return (
     <div className="relative h-full w-full">
-      <div ref={mapRef} className="map-container" />
+      <MapContainer 
+        center={saoPaulo} 
+        zoom={13} 
+        className="map-container"
+      >
+        <MapController mapRef={mapRef} setMapRef={setMapRef} />
+        
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        
+        <LocationMarker onLocationFound={handleLocationFound} />
+        
+        {stations.map(station => {
+          // Ensure lat and lng are converted to numbers
+          const lat = typeof station.lat === 'string' ? parseFloat(station.lat) : station.lat;
+          const lng = typeof station.lng === 'string' ? parseFloat(station.lng) : station.lng;
+          
+          return (
+            <Marker 
+              key={station.id}
+              position={[lat, lng]} 
+              eventHandlers={{
+                click: () => onStationSelect(station)
+              }}
+            >
+              <Popup>
+                <div className="text-center">
+                  <strong>{station.name}</strong><br/>
+                  {station.availableBikes} bicicletas disponíveis
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
+      
       <div className="fixed right-4 bottom-32 md:bottom-24 z-10">
         <button 
           onClick={centerOnUserLocation}
-          className="bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white shadow-lg rounded-full p-3"
+          className="bg-white dark:bg-zinc-800 text-secondary hover:text-white hover:bg-secondary shadow-lg rounded-full p-3 transition-colors duration-300"
         >
           <span className="material-icons">my_location</span>
         </button>
