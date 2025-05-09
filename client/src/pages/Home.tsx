@@ -181,12 +181,8 @@ export default function Home() {
 
     setScheduledTime(date);
     
-    createRentalMutation.mutate({
-      bikeId: selectedBike.id,
-      stationId: selectedStation.id,
-      planId: selectedPlan.id,
-      scheduledTime: date.toISOString(),
-    });
+    // Mostrar o formulário de aluguel para coletar informações do usuário
+    setCurrentView('rentalForm');
   };
 
   // Book any available bike
@@ -574,6 +570,22 @@ export default function Home() {
           </div>
         )}
 
+        {currentView === 'rentalForm' && selectedBike && selectedStation && (
+          <div className="px-4 pb-8">
+            <div className="flex items-center mb-4">
+              <button className="mr-2 text-zinc-800 dark:text-white" onClick={goBackToBikeDetail}>
+                <span className="material-icons">arrow_back</span>
+              </button>
+              <h2 className="text-2xl font-semibold fade-in">Finalizar Aluguel</h2>
+            </div>
+            
+            <RentalForm 
+              onSubmit={handleRentalFormSubmit}
+              onCancel={goBackToBikeDetail}
+            />
+          </div>
+        )}
+        
         {currentView === 'bookingConfirmation' && currentRental && (
           <div className="px-4 pb-8">
             <div className="text-center mb-6 slide-in">
