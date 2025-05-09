@@ -1,6 +1,6 @@
 # BikeShare SP - Sistema de Aluguel de Bicicletas
 
-![BikeShare SP](https://i.imgur.com/aG6L3GJ.png)
+![BikeShare SP](https://github.com/vitorjoaodev/Bike-App/blob/main/my.menu.jpg?raw=true)
 
 ## Visão Geral
 
