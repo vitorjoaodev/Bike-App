@@ -13,10 +13,12 @@ import StationCard from "@/components/StationCard";
 import BikeCard from "@/components/BikeCard";
 import RentalPlan from "@/components/RentalPlan";
 import ScheduleBooking from "@/components/ScheduleBooking";
+import RentalForm from "@/components/RentalForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const { toast } = useToast();
@@ -24,7 +26,7 @@ export default function Home() {
   // UI state
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'stations' | 'stationDetail' | 'bikeDetail' | 'scheduleBooking' | 'bookingConfirmation'>('stations');
+  const [currentView, setCurrentView] = useState<'stations' | 'stationDetail' | 'bikeDetail' | 'scheduleBooking' | 'bookingConfirmation' | 'rentalForm'>('stations');
   const [searchTerm, setSearchTerm] = useState("");
   const [stationViewTab, setStationViewTab] = useState<'map' | 'list'>('map');
   
@@ -34,6 +36,7 @@ export default function Home() {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [currentRental, setCurrentRental] = useState<Rental | null>(null);
   const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
+  const [userFormData, setUserFormData] = useState<any>(null);
 
   // Fetch all stations
   const { 
@@ -150,10 +153,18 @@ export default function Home() {
       return;
     }
 
+    // Mostrar o formulário de aluguel para coletar informações do usuário
+    setCurrentView('rentalForm');
+  };
+  
+  // Finaliza o aluguel após o preenchimento do formulário
+  const handleRentalFormSubmit = (formData: any) => {
+    setUserFormData(formData);
+    
     createRentalMutation.mutate({
-      bikeId: selectedBike.id,
-      stationId: selectedStation.id,
-      planId: selectedPlan.id,
+      bikeId: selectedBike!.id,
+      stationId: selectedStation!.id,
+      planId: selectedPlan!.id,
     });
   };
 

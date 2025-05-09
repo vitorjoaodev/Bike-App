@@ -127,6 +127,7 @@ export default function Map({ onStationSelect }: MapProps) {
             <Marker 
               key={station.id}
               position={[lat, lng]} 
+              icon={BikeStationIcon(station.availableBikes)}
               eventHandlers={{
                 click: () => onStationSelect(station)
               }}
