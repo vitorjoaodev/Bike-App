@@ -121,7 +121,7 @@ export default function EnhancedMap({ stations, onStationSelect }: EnhancedMapPr
       const bounds = L.latLngBounds([]);
       
       stations.forEach((station) => {
-        const marker = L.marker([station.lat, station.lng], {
+        const marker = L.marker([Number(station.lat), Number(station.lng)], {
           icon: createStationIcon(station.availableBikes)
         }).addTo(mapRef);
         
@@ -129,7 +129,7 @@ export default function EnhancedMap({ stations, onStationSelect }: EnhancedMapPr
           onStationSelect(station);
         });
         
-        bounds.extend([station.lat, station.lng]);
+        bounds.extend([Number(station.lat), Number(station.lng)]);
         markersRef.current.push(marker);
       });
       

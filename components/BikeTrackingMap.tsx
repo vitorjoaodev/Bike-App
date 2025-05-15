@@ -148,6 +148,9 @@ const BikeTrackingMap: React.FC<BikeTrackingMapProps> = ({
         
         {/* Mantém o mapa centralizado na bicicleta */}
         <CenterUpdater position={currentPosition} />
+        
+        {/* Adiciona o handler de cliques se houver onSetDestination */}
+        {onSetDestination && <MapClickHandler />}
       </MapContainer>
       
       {/* Painel de informações */}

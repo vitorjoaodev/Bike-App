@@ -57,8 +57,9 @@ export function useSimpleBikeTracking() {
             const newBikes: Record<number, TrackedBike> = { ...trackedBikes };
             
             // Para cada bicicleta no update
-            for (const bikeId in data.bikes) {
-              const bikeUpdate = data.bikes[bikeId];
+            Object.entries(data.bikes).forEach(([bikeIdStr, bikeUpdateData]) => {
+              const bikeId = Number(bikeIdStr);
+              const bikeUpdate = bikeUpdateData as BikeLocation;
               
               if (!newBikes[bikeId]) {
                 // Nova bicicleta - inicializa com um caminho (path)
@@ -92,7 +93,7 @@ export function useSimpleBikeTracking() {
                   path: updatedPath
                 };
               }
-            }
+            });
             
             setTrackedBikes(newBikes);
             break;
@@ -101,8 +102,9 @@ export function useSimpleBikeTracking() {
             // Estado inicial das localizações das bicicletas
             const initialBikes: Record<number, TrackedBike> = {};
             
-            for (const bikeId in data.bikes) {
-              const bikeData = data.bikes[bikeId];
+            Object.entries(data.bikes).forEach(([bikeIdStr, bikeDataValue]) => {
+              const bikeId = Number(bikeIdStr);
+              const bikeData = bikeDataValue as BikeLocation;
               
               initialBikes[bikeId] = {
                 ...bikeData,
@@ -112,7 +114,7 @@ export function useSimpleBikeTracking() {
                   timestamp: bikeData.timestamp 
                 }]
               };
-            }
+            });
             
             setTrackedBikes(initialBikes);
             break;
