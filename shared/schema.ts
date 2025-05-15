@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, foreignKey, json, doublePrecision, date, varchar } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -112,6 +112,94 @@ export const rentalsRelations = relations(rentals, ({ one }) => ({
   }),
 }));
 
+// Performance schema
+export const rideStats = pgTable("ride_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  rentalId: integer("rental_id").references(() => rentals.id),
+  date: date("date").notNull().defaultNow(),
+  duration: integer("duration").notNull(), // in seconds
+  distance: doublePrecision("distance").notNull(), // in km
+  avgSpeed: doublePrecision("avg_speed").notNull(), // in km/h
+  maxSpeed: doublePrecision("max_speed").notNull(), // in km/h
+  caloriesBurned: integer("calories_burned").notNull(),
+  elevationGain: integer("elevation_gain").notNull(), // in meters
+  route: json("route").$type<Array<{lat: number, lng: number, timestamp: number}>>(), // array of coordinates
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertRideStatsSchema = createInsertSchema(rideStats).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const userPerformanceGoals = pgTable("user_performance_goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  weeklyDistanceGoal: doublePrecision("weekly_distance_goal"), // in km
+  weeklyDurationGoal: integer("weekly_duration_goal"), // in minutes
+  weeklyCaloriesGoal: integer("weekly_calories_goal"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserPerformanceGoalsSchema = createInsertSchema(userPerformanceGoals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const achievementTypes = pgTable("achievement_types", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  iconUrl: text("icon_url"),
+  criteria: json("criteria").$type<{type: string, value: number}>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  achievementTypeId: integer("achievement_type_id").notNull().references(() => achievementTypes.id),
+  earnedAt: timestamp("earned_at").notNull().defaultNow(),
+});
+
+export const insertUserAchievementsSchema = createInsertSchema(userAchievements).omit({
+  id: true,
+  earnedAt: true,
+});
+
+// Relations
+export const rideStatsRelations = relations(rideStats, ({ one }) => ({
+  user: one(users, {
+    fields: [rideStats.userId],
+    references: [users.id],
+  }),
+  rental: one(rentals, {
+    fields: [rideStats.rentalId],
+    references: [rentals.id],
+  }),
+}));
+
+export const userPerformanceGoalsRelations = relations(userPerformanceGoals, ({ one }) => ({
+  user: one(users, {
+    fields: [userPerformanceGoals.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [userAchievements.userId],
+    references: [users.id],
+  }),
+  achievementType: one(achievementTypes, {
+    fields: [userAchievements.achievementTypeId],
+    references: [achievementTypes.id],
+  }),
+}));
+
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -124,3 +212,13 @@ export type InsertBike = z.infer<typeof insertBikeSchema>;
 
 export type Rental = typeof rentals.$inferSelect;
 export type InsertRental = z.infer<typeof insertRentalSchema>;
+
+export type RideStats = typeof rideStats.$inferSelect;
+export type InsertRideStats = z.infer<typeof insertRideStatsSchema>;
+
+export type UserPerformanceGoals = typeof userPerformanceGoals.$inferSelect;
+export type InsertUserPerformanceGoals = z.infer<typeof insertUserPerformanceGoalsSchema>;
+
+export type AchievementType = typeof achievementTypes.$inferSelect;
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = z.infer<typeof insertUserAchievementsSchema>;

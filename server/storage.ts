@@ -3,7 +3,11 @@ import {
   type Station, type InsertStation,
   type Bike, type InsertBike,
   type Rental, type InsertRental,
-  users, stations, bikes, rentals 
+  type RideStats, type InsertRideStats,
+  type UserPerformanceGoals, type InsertUserPerformanceGoals,
+  type AchievementType, type UserAchievement, type InsertUserAchievement,
+  users, stations, bikes, rentals, rideStats, userPerformanceGoals,
+  achievementTypes, userAchievements
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -33,6 +37,38 @@ export interface IStorage {
   getRental(id: number): Promise<Rental | undefined>;
   getRentalsByUser(userId: number): Promise<Rental[]>;
   createRental(rental: InsertRental): Promise<Rental>;
+  
+  // Ride stats operations
+  getRideStats(userId: number): Promise<RideStats[]>;
+  getRideStatsByDate(userId: number, startDate: Date, endDate?: Date): Promise<RideStats[]>;
+  getRideStat(id: number): Promise<RideStats | undefined>;
+  createRideStat(rideStat: InsertRideStats): Promise<RideStats>;
+  
+  // User performance goals operations
+  getUserPerformanceGoals(userId: number): Promise<UserPerformanceGoals | undefined>;
+  createUserPerformanceGoals(goals: InsertUserPerformanceGoals): Promise<UserPerformanceGoals>;
+  updateUserPerformanceGoals(id: number, goals: Partial<InsertUserPerformanceGoals>): Promise<UserPerformanceGoals>;
+  
+  // Achievement operations
+  getAchievementTypes(): Promise<AchievementType[]>;
+  getUserAchievements(userId: number): Promise<(UserAchievement & { achievementType: AchievementType })[]>;
+  createUserAchievement(achievement: InsertUserAchievement): Promise<UserAchievement>;
+  
+  // Performance analytics
+  getUserWeeklyStats(userId: number): Promise<{
+    totalDistance: number;
+    totalDuration: number;
+    totalCalories: number;
+    ridesCount: number;
+    avgSpeed: number;
+  }>;
+  getUserMonthlyStats(userId: number): Promise<{
+    totalDistance: number;
+    totalDuration: number;
+    totalCalories: number;
+    ridesCount: number;
+    avgSpeed: number;
+  }>;
 }
 
 // Database storage implementation
