@@ -5,11 +5,25 @@ import { insertRentalSchema } from "@shared/schema";
 import { z } from "zod";
 import { format, add } from "date-fns";
 import { setupWebSocketServer } from './websocket';
+import { addNewStations } from './addStations';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add new stations endpoint (temporário, para adicionar as novas estações)
+  app.get('/api/stations/add-new', async (req, res) => {
+    try {
+      const result = await addNewStations();
+      res.json({ success: true, result });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to add new stations', error });
+    }
+  });
+
   // Get all stations
   app.get('/api/stations', async (req, res) => {
     try {
+      // Tentativa de adicionar novas estações se ainda não existirem
+      await addNewStations().catch(err => console.error("Erro ao adicionar estações:", err));
+      
       const stations = await storage.getStations();
       res.json(stations);
     } catch (error) {

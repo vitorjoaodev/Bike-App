@@ -176,8 +176,7 @@ export default function GoogleMapComponent({
           <Marker
             position={userLocation}
             icon={{
-              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new google.maps.Size(40, 40),
+              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
             }}
           />
         )}
@@ -192,8 +191,7 @@ export default function GoogleMapComponent({
               onStationSelect(station);
             }}
             icon={{
-              url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-              scaledSize: new google.maps.Size(36, 36),
+              url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
             }}
           />
         ))}
@@ -230,8 +228,7 @@ export default function GoogleMapComponent({
             icon={{
               url: selectedBike.isMoving 
                 ? 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
-                : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-              scaledSize: new google.maps.Size(40, 40),
+                : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
             }}
             animation={selectedBike.isMoving ? google.maps.Animation.BOUNCE : undefined}
           />
