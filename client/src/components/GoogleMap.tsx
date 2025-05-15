@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow, DirectionsRenderer } from '@react-google-maps/api';
-import { Station } from '@shared/schema';
+import { Station } from '@/types';
 
 // Estilos personalizados do mapa para um visual mais moderno
 const mapStyles = [

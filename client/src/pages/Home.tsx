@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 import Header from "@/components/Header";
-import Map from "@/components/Map";
+import GoogleMapComponent from "@/components/GoogleMap";
 import BottomSheet from "@/components/BottomSheet";
 import ProfileMenu from "@/components/ProfileMenu";
 import StationCard from "@/components/StationCard";
@@ -234,7 +234,7 @@ export default function Home() {
     <div className="h-screen overflow-hidden relative">
       <Header onProfileClick={toggleProfileMenu} />
       
-      {stationViewTab === 'map' && <Map onStationSelect={handleStationSelect} />}
+      {stationViewTab === 'map' && <GoogleMapComponent stations={stations} onStationSelect={handleStationSelect} />}
       
       <BottomSheet expanded={sheetExpanded} onToggle={() => setSheetExpanded(!sheetExpanded)}>
         {currentView === 'stations' && (
@@ -244,6 +244,12 @@ export default function Home() {
                 <span className="text-secondary">Bike</span>Share
               </h2>
               <p className="text-gray-600 dark:text-gray-300">Encontre bicicletas disponíveis perto de você</p>
+              <div className="mt-3">
+                <a href="/tracking/1" className="inline-flex items-center text-secondary hover:text-green-600 transition-colors">
+                  <span className="material-icons mr-1" style={{ fontSize: '1rem' }}>location_on</span>
+                  <span>Rastrear Bicicleta #1</span>
+                </a>
+              </div>
             </div>
             
             <Tabs value={stationViewTab} onValueChange={(v) => setStationViewTab(v as 'map' | 'list')} className="mb-4">
