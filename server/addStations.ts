@@ -1,15 +1,18 @@
 import { db } from "./db";
 import { stations } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 
 export async function addNewStations() {
   try {
     // Verificar se as estações já existem para evitar duplicação
     const existingStations = await db.select().from(stations).where(
-      eq(stations.name, "Parque Ibirapuera")
+      or(
+        eq(stations.name, "Parque Ibirapuera"),
+        eq(stations.name, "Parque Villa Lobos")
+      )
     );
     
-    if (existingStations.length > 0) {
+    if (existingStations.length >= 2) {
       console.log(`As estações já existem. Já existem ${existingStations.length} estações.`);
       return;
     }
