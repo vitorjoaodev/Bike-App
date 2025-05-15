@@ -162,7 +162,7 @@ export default function GoogleMapComponent({
   }, []);
 
   return (
-    <LoadScript googleMapsApiKey={process.env.GOOGLE_MAPS_API_KEY || ''}>
+    <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}>
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={selectedBike ? selectedBike.location : userLocation || center}

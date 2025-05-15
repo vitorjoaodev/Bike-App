@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { insertRentalSchema } from "@shared/schema";
 import { z } from "zod";
 import { format, add } from "date-fns";
-import { setupWebSocketServer } from './websocket-simple';
+import { setupWebSocketServer } from './websocket';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all stations
