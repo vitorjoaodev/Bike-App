@@ -2,71 +2,105 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow, DirectionsRenderer } from '@react-google-maps/api';
 import { Station } from '@/types';
 
-// Estilos personalizados do mapa para um visual mais moderno
+// Estilos personalizados do mapa para um visual mais moderno e vibrante
 const mapStyles = [
   {
     "featureType": "water",
     "elementType": "geometry",
     "stylers": [
-      { "color": "#e9e9e9" },
-      { "lightness": 17 }
+      { "color": "#a3daff" }
     ]
   },
   {
     "featureType": "landscape",
     "elementType": "geometry",
     "stylers": [
-      { "color": "#f5f5f5" },
-      { "lightness": 20 }
+      { "color": "#f0f7e9" }
     ]
   },
   {
     "featureType": "road.highway",
     "elementType": "geometry.fill",
     "stylers": [
-      { "color": "#ffffff" },
-      { "lightness": 17 }
+      { "color": "#ffd05b" }
     ]
   },
   {
     "featureType": "road.highway",
     "elementType": "geometry.stroke",
     "stylers": [
-      { "color": "#ffffff" },
-      { "lightness": 29 },
-      { "weight": 0.2 }
+      { "color": "#f99b2a" },
+      { "weight": 0.8 }
     ]
   },
   {
     "featureType": "road.arterial",
-    "elementType": "geometry",
+    "elementType": "geometry.fill",
     "stylers": [
-      { "color": "#ffffff" },
-      { "lightness": 18 }
+      { "color": "#ffffff" }
+    ]
+  },
+  {
+    "featureType": "road.arterial",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      { "color": "#d7d7d7" }
     ]
   },
   {
     "featureType": "road.local",
     "elementType": "geometry",
     "stylers": [
-      { "color": "#ffffff" },
-      { "lightness": 16 }
+      { "color": "#ffffff" }
     ]
   },
   {
     "featureType": "poi",
     "elementType": "geometry",
     "stylers": [
-      { "color": "#f5f5f5" },
-      { "lightness": 21 }
+      { "color": "#c1e2a3" }
     ]
   },
   {
     "featureType": "poi.park",
     "elementType": "geometry",
     "stylers": [
-      { "color": "#dedede" },
-      { "lightness": 21 }
+      { "color": "#a3d99c" }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#447a2e" }
+    ]
+  },
+  {
+    "featureType": "transit.station",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#ffcbd3" }
+    ]
+  },
+  {
+    "featureType": "administrative",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#444444" }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#000000" }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      { "color": "#666666" }
     ]
   }
 ];
@@ -75,6 +109,8 @@ const mapStyles = [
 const mapContainerStyle = {
   width: '100%',
   height: '100%',
+  borderRadius: '0px',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
 };
 
 // Localização inicial (Centro de São Paulo)
@@ -85,8 +121,24 @@ const center = {
 
 const options = {
   styles: mapStyles,
-  disableDefaultUI: true,
+  disableDefaultUI: false,
   zoomControl: true,
+  mapTypeControl: true,
+  streetViewControl: true,
+  fullscreenControl: true,
+  mapTypeControlOptions: {
+    style: 2, // DROPDOWN_MENU
+    position: 1, // TOP_LEFT
+  },
+  streetViewControlOptions: {
+    position: 9, // RIGHT_CENTER
+  },
+  zoomControlOptions: {
+    position: 9, // RIGHT_CENTER
+  },
+  fullscreenControlOptions: {
+    position: 3, // TOP_RIGHT
+  }
 };
 
 type GoogleMapComponentProps = {
@@ -161,6 +213,17 @@ export default function GoogleMapComponent({
     mapRef.current = null;
   }, []);
 
+  const handleMapLoad = (map: google.maps.Map) => {
+    onLoad(map);
+    
+    // Adicionar um efeito de suavização quando o mapa é carregado
+    map.setOptions({
+      gestureHandling: 'greedy', // Permite scroll mais fácil no mapa
+      minZoom: 10,
+      maxZoom: 20
+    });
+  };
+
   return (
     <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}>
       <GoogleMap
@@ -168,7 +231,7 @@ export default function GoogleMapComponent({
         center={selectedBike ? selectedBike.location : userLocation || center}
         zoom={14}
         options={options}
-        onLoad={onLoad}
+        onLoad={handleMapLoad}
         onUnmount={onUnmount}
       >
         {/* Marcador do usuário */}
@@ -176,8 +239,12 @@ export default function GoogleMapComponent({
           <Marker
             position={userLocation}
             icon={{
-              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+              url: '/assets/user-location-marker.svg',
+              scaledSize: new window.google.maps.Size(24, 24),
+              anchor: new window.google.maps.Point(12, 12)
             }}
+            animation={window.google.maps.Animation.DROP}
+            title="Sua localização"
           />
         )}
         
@@ -191,8 +258,18 @@ export default function GoogleMapComponent({
               onStationSelect(station);
             }}
             icon={{
-              url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+              url: '/assets/bike-station-marker.svg',
+              scaledSize: new window.google.maps.Size(38, 38),
+              anchor: new window.google.maps.Point(19, 38),
+              labelOrigin: new window.google.maps.Point(19, -10)
             }}
+            label={{
+              text: station.name,
+              color: '#333333',
+              fontSize: '11px',
+              fontWeight: 'bold'
+            }}
+            animation={window.google.maps.Animation.DROP}
           />
         ))}
         
@@ -202,20 +279,31 @@ export default function GoogleMapComponent({
             position={{ lat: parseFloat(selectedStation.lat), lng: parseFloat(selectedStation.lng) }}
             onCloseClick={() => setSelectedStation(null)}
           >
-            <div className="p-2">
-              <h3 className="font-bold text-gray-900">{selectedStation.name}</h3>
-              <p className="text-sm text-gray-600">{selectedStation.address}</p>
-              <div className="mt-2 text-sm">
-                <span className="font-medium">Bikes disponíveis:</span> {selectedStation.availableBikes}
+            <div className="p-3 max-w-xs">
+              <h3 className="font-bold text-gray-900 text-lg mb-1">{selectedStation.name}</h3>
+              <p className="text-sm text-gray-600 mb-2">{selectedStation.address}</p>
+              
+              <div className="flex justify-between items-center bg-gray-50 rounded-md p-2 mb-2">
+                <div className="text-sm">
+                  <div className="font-medium text-green-600">Bikes disponíveis</div>
+                  <div className="text-2xl font-bold">{selectedStation.availableBikes}</div>
+                </div>
+                <div className="text-sm text-right">
+                  <div className="font-medium text-blue-600">Vagas livres</div>
+                  <div className="text-2xl font-bold">{selectedStation.totalDocks - selectedStation.availableBikes}</div>
+                </div>
               </div>
-              <div className="text-sm">
-                <span className="font-medium">Vagas disponíveis:</span> {selectedStation.totalDocks - selectedStation.availableBikes}
+              
+              <div className="text-xs text-gray-500 mb-2">
+                <div>Horário: {selectedStation.openingTime} - {selectedStation.closingTime}</div>
+                <div>{selectedStation.distance} ({selectedStation.walkingTime})</div>
               </div>
+              
               <button 
                 onClick={() => onStationSelect(selectedStation)}
-                className="mt-2 px-3 py-1 bg-secondary text-white text-sm rounded-md hover:bg-secondary/90"
+                className="w-full mt-1 px-4 py-2 bg-secondary text-white font-medium rounded-md hover:bg-secondary/90 transition-colors"
               >
-                Selecionar
+                Selecionar esta estação
               </button>
             </div>
           </InfoWindow>
