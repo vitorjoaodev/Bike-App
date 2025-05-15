@@ -74,19 +74,16 @@ function MapController({ mapRef, setMapRef }: { mapRef: L.Map | null, setMapRef:
 }
 
 type MapProps = {
+  stations: Station[];
   onStationSelect: (station: Station) => void;
 };
 
-export default function Map({ onStationSelect }: MapProps) {
+export default function Map({ stations, onStationSelect }: MapProps) {
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [mapRef, setMapRef] = useState<L.Map | null>(null);
 
   // São Paulo coordinates
   const saoPaulo: [number, number] = [-23.550520, -46.633308];
-  
-  const { data: stations = [] } = useQuery<Station[]>({
-    queryKey: ['/api/stations'],
-  });
 
   const handleLocationFound = useCallback((lat: number, lng: number) => {
     setUserLocation({ lat, lng });
