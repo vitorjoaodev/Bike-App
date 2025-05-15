@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { useTheme } from "@/lib/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
+import BlogButton from "@/components/BlogButton";
 
 type HeaderProps = {
   onProfileClick: () => void;
@@ -28,7 +29,9 @@ export default function Header({ onProfileClick }: HeaderProps) {
         </div>
       </Link>
       
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center space-x-2">
+        <BlogButton />
+      
         <Button 
           variant="ghost" 
           size="icon" 
