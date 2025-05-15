@@ -150,6 +150,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to fetch rental' });
     }
   });
+  
+  // Performance dashboard endpoints
+  
+  // Get user weekly stats
+  app.get('/api/performance/weekly', async (req, res) => {
+    try {
+      const userId = 1; // Simulação de usuário logado
+      
+      // Dados simulados para o front-end
+      // Em produção, isso viria dos métodos implementados no storage:
+      // const stats = await storage.getUserWeeklyStats(userId);
+      
+      const stats = {
+        totalDistance: 32.5,
+        totalDuration: 6480, // em segundos (1h48min)
+        totalCalories: 850,
+        ridesCount: 4,
+        avgSpeed: 18.2,
+        elevationGain: 120,
+        weeklyGoal: 50 // km
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error('Erro ao obter estatísticas semanais:', error);
+      res.status(500).json({ message: 'Erro ao obter estatísticas semanais' });
+    }
+  });
+  
+  // Get user monthly stats
+  app.get('/api/performance/monthly', async (req, res) => {
+    try {
+      const userId = 1; // Simulação de usuário logado
+      
+      // Dados simulados para o front-end
+      // Em produção, isso viria dos métodos implementados no storage:
+      // const stats = await storage.getUserMonthlyStats(userId);
+      
+      const stats = {
+        totalDistance: 128.7,
+        totalDuration: 24300, // em segundos (6h45min)
+        totalCalories: 3250,
+        ridesCount: 16,
+        avgSpeed: 19.5,
+        elevationGain: 520,
+        monthlyGoal: 200 // km
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error('Erro ao obter estatísticas mensais:', error);
+      res.status(500).json({ message: 'Erro ao obter estatísticas mensais' });
+    }
+  });
+  
+  // Get user achievements
+  app.get('/api/performance/achievements', async (req, res) => {
+    try {
+      const userId = 1; // Simulação de usuário logado
+      
+      // Dados simulados para o front-end
+      // Em produção, isso viria dos métodos implementados no storage:
+      // const achievements = await storage.getUserAchievements(userId);
+      
+      const achievements = [
+        { id: 1, name: 'Primeiro Passeio', description: 'Realizou sua primeira viagem', iconName: 'directions_bike', iconColor: 'green', date: '12/05/2025' },
+        { id: 2, name: 'Maratonista', description: 'Percorreu 100km no total', iconName: 'emoji_events', iconColor: 'yellow', date: '14/05/2025' },
+        { id: 3, name: 'Eco-Friendly', description: 'Economizou 5kg de CO2', iconName: 'eco', iconColor: 'blue', date: '15/05/2025' },
+      ];
+      
+      res.json(achievements);
+    } catch (error) {
+      console.error('Erro ao obter conquistas:', error);
+      res.status(500).json({ message: 'Erro ao obter conquistas' });
+    }
+  });
+  
+  // Get user rides history
+  app.get('/api/performance/rides', async (req, res) => {
+    try {
+      const userId = 1; // Simulação de usuário logado
+      
+      // Dados simulados para o front-end
+      // Em produção, isso viria dos métodos implementados no storage:
+      // const rides = await storage.getRideStats(userId);
+      
+      const rides = [
+        { 
+          id: 1, 
+          date: '15/05/2025', 
+          start: 'Estação Paulista', 
+          end: 'Parque Ibirapuera', 
+          distance: 5.2, 
+          duration: 1260, // 21min
+          calories: 180
+        },
+        { 
+          id: 2, 
+          date: '14/05/2025', 
+          start: 'Parque Ibirapuera', 
+          end: 'Estação Paulista', 
+          distance: 5.4, 
+          duration: 1320, // 22min
+          calories: 190
+        },
+        { 
+          id: 3, 
+          date: '12/05/2025', 
+          start: 'Estação Paulista', 
+          end: 'Parque Villa Lobos', 
+          distance: 9.8, 
+          duration: 2400, // 40min
+          calories: 320
+        },
+      ];
+      
+      res.json(rides);
+    } catch (error) {
+      console.error('Erro ao obter histórico de passeios:', error);
+      res.status(500).json({ message: 'Erro ao obter histórico de passeios' });
+    }
+  });
+  
+  // Update user performance goals
+  app.post('/api/performance/goals', async (req, res) => {
+    try {
+      const userId = 1; // Simulação de usuário logado
+      const { weeklyDistanceGoal, weeklyDurationGoal, weeklyCaloriesGoal } = req.body;
+      
+      // Em produção, isso utilizaria os métodos implementados no storage:
+      /*
+      let goals = await storage.getUserPerformanceGoals(userId);
+      
+      if (goals) {
+        goals = await storage.updateUserPerformanceGoals(goals.id, {
+          weeklyDistanceGoal,
+          weeklyDurationGoal,
+          weeklyCaloriesGoal
+        });
+      } else {
+        goals = await storage.createUserPerformanceGoals({
+          userId,
+          weeklyDistanceGoal,
+          weeklyDurationGoal,
+          weeklyCaloriesGoal
+        });
+      }
+      */
+      
+      // Dados simulados para resposta
+      const goals = {
+        id: 1,
+        userId,
+        weeklyDistanceGoal: weeklyDistanceGoal || 50,
+        weeklyDurationGoal: weeklyDurationGoal || 300, // 5 horas
+        weeklyCaloriesGoal: weeklyCaloriesGoal || 1000,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      res.json(goals);
+    } catch (error) {
+      console.error('Erro ao atualizar metas de desempenho:', error);
+      res.status(500).json({ message: 'Erro ao atualizar metas de desempenho' });
+    }
+  });
 
   const httpServer = createServer(app);
   

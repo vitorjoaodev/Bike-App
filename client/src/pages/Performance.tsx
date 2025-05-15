@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { 
   Card, 
   CardContent, 
@@ -26,87 +25,45 @@ import {
   ThermometerSun
 } from 'lucide-react';
 import Header from '../components/Header';
-
-// Formatter para exibir duração em horas e minutos
-const formatDuration = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return `${hours}h ${minutes}m`;
-};
-
-// Formatter para exibir distância em km com 1 casa decimal
-const formatDistance = (km: number) => {
-  return `${km.toFixed(1)} km`;
-};
-
-// Formatter para exibir velocidade em km/h
-const formatSpeed = (kmh: number) => {
-  return `${kmh.toFixed(1)} km/h`;
-};
+import { 
+  useWeeklyStats, 
+  useMonthlyStats, 
+  useAchievements, 
+  useRideHistory,
+  formatDistance,
+  formatDuration,
+  formatSpeed,
+  formatCalories,
+  getGoalPercentage
+} from '@/hooks/usePerformance';
 
 export default function Performance() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [tabValue, setTabValue] = useState('summary');
 
-  // Dados simulados - serão substituídos por chamadas reais à API
-  const weeklyStats = {
-    totalDistance: 32.5,
-    totalDuration: 6480, // em segundos (1h48min)
-    totalCalories: 850,
-    ridesCount: 4,
-    avgSpeed: 18.2,
-    elevationGain: 120,
-    weeklyGoal: 50 // km
-  };
-  
-  const monthlyStats = {
-    totalDistance: 128.7,
-    totalDuration: 24300, // em segundos (6h45min)
-    totalCalories: 3250,
-    ridesCount: 16,
-    avgSpeed: 19.5,
-    elevationGain: 520,
-    monthlyGoal: 200 // km
-  };
-  
-  const achievements = [
-    { id: 1, name: 'Primeiro Passeio', description: 'Realizou sua primeira viagem', icon: <Bike className="h-6 w-6 text-green-500" />, date: '12/05/2025' },
-    { id: 2, name: 'Maratonista', description: 'Percorreu 100km no total', icon: <Award className="h-6 w-6 text-yellow-500" />, date: '14/05/2025' },
-    { id: 3, name: 'Eco-Friendly', description: 'Economizou 5kg de CO2', icon: <ThermometerSun className="h-6 w-6 text-blue-500" />, date: '15/05/2025' },
-  ];
-  
-  const recentRides = [
-    { 
-      id: 1, 
-      date: '15/05/2025', 
-      start: 'Estação Paulista', 
-      end: 'Parque Ibirapuera', 
-      distance: 5.2, 
-      duration: 1260, // 21min
-      calories: 180
-    },
-    { 
-      id: 2, 
-      date: '14/05/2025', 
-      start: 'Parque Ibirapuera', 
-      end: 'Estação Paulista', 
-      distance: 5.4, 
-      duration: 1320, // 22min
-      calories: 190
-    },
-    { 
-      id: 3, 
-      date: '12/05/2025', 
-      start: 'Estação Paulista', 
-      end: 'Parque Villa Lobos', 
-      distance: 9.8, 
-      duration: 2400, // 40min
-      calories: 320
-    },
-  ];
+  // Fetch data using our custom hooks
+  const { data: weeklyStats, isLoading: isLoadingWeekly } = useWeeklyStats();
+  const { data: monthlyStats, isLoading: isLoadingMonthly } = useMonthlyStats();
+  const { data: achievements, isLoading: isLoadingAchievements } = useAchievements();
+  const { data: recentRides, isLoading: isLoadingRides } = useRideHistory();
 
-  // Calcular percentual da meta semanal
-  const weeklyGoalPercentage = Math.min(Math.round((weeklyStats.totalDistance / weeklyStats.weeklyGoal) * 100), 100);
+  // Calculate weekly goal percentage
+  const weeklyGoalPercentage = weeklyStats ? 
+    getGoalPercentage(weeklyStats.totalDistance, weeklyStats.weeklyGoal) : 0;
+  
+  // Helper function to render achievement icons
+  const renderAchievementIcon = (iconName: string, iconColor: string) => {
+    switch (iconName) {
+      case 'directions_bike':
+        return <Bike className={`h-6 w-6 text-${iconColor}-500`} />;
+      case 'emoji_events':
+        return <Award className={`h-6 w-6 text-${iconColor}-500`} />;
+      case 'eco':
+        return <ThermometerSun className={`h-6 w-6 text-${iconColor}-500`} />;
+      default:
+        return <Award className={`h-6 w-6 text-${iconColor}-500`} />;
+    }
+  };
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
