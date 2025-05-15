@@ -7,7 +7,7 @@ import SEOHead from '../components/SEOHead';
 import BlogHeader from '../components/blog/BlogHeader';
 import BlogCard from '../components/blog/BlogCard';
 import { blogPosts, blogPostSummaries } from '../data/mockBlogData';
-import { BlogPost as BlogPostType } from '../data/mockBlogData';
+import type { BlogPost as BlogPostType } from '@shared/types/blog';
 
 // Função para converter o markdown para HTML (simples, apenas para demonstração)
 function markdownToHtml(markdown: string): string {

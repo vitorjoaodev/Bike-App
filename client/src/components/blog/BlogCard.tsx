@@ -1,7 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { BlogPostSummary } from '../../data/mockBlogData';
+import type { BlogPostSummary } from '@shared/types/blog';
 import { Link } from 'wouter';
 
 interface BlogCardProps {

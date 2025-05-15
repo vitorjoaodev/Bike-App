@@ -4,7 +4,8 @@ import SEOHead from '../components/SEOHead';
 import BlogHeader from '../components/blog/BlogHeader';
 import BlogGrid from '../components/blog/BlogGrid';
 import TagCloud from '../components/blog/TagCloud';
-import { blogPostSummaries, allTags, categories, BlogPostSummary } from '../data/mockBlogData';
+import { blogPostSummaries, allTags, categories } from '../data/mockBlogData';
+import type { BlogPostSummary } from '@shared/types/blog';
 
 /**
  * Página principal do blog

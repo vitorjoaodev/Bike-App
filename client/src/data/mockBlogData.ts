@@ -1,4 +1,4 @@
-import { BlogPost, BlogPostSummary, Author, Category } from '../../shared/types/blog';
+import { BlogPost, BlogPostSummary, Author, Category } from '@shared/types/blog';
 
 // Autores simulados
 export const authors: Author[] = [
