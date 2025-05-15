@@ -10,6 +10,7 @@ import Profile from "@/pages/Profile";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import BikeTracking from "@/pages/BikeTracking";
+import Performance from "@/pages/Performance";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/tracking/:id" component={BikeTracking} />
+      <Route path="/performance" component={Performance} />
       <Route component={NotFound} />
     </Switch>
   );

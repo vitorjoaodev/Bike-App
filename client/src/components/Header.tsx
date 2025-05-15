@@ -27,6 +27,16 @@ export default function Header({ onProfileClick }: HeaderProps) {
       
       <div className="flex items-center space-x-2">
         <BlogButton />
+        
+        <Link href="/performance">
+          <Button 
+            variant="ghost" 
+            className="flex items-center text-zinc-800 dark:text-white"
+          >
+            <span className="material-icons mr-1">insights</span>
+            <span className="hidden md:inline">Desempenho</span>
+          </Button>
+        </Link>
       
         <Button 
           variant="ghost" 

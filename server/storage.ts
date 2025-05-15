@@ -115,13 +115,13 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`No bikes available at station ${id}`);
     }
     
-    const result = await db
+    const [updatedStation] = await db
       .update(stations)
       .set({ availableBikes: station.availableBikes - 1 })
       .where(eq(stations.id, id))
       .returning();
-    
-    return result[0];
+      
+    return updatedStation;
   }
 
   // Bike operations
@@ -158,7 +158,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRental(rentalData: InsertRental): Promise<Rental> {
-    // Get the bike and station for additional details
+    // Get bike and station info for rental pricing
     const bike = await this.getBike(rentalData.bikeId);
     if (!bike) {
       throw new Error(`Bike with id ${rentalData.bikeId} not found`);
@@ -169,40 +169,33 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`Station with id ${rentalData.stationId} not found`);
     }
     
-    // Check if bike is available at this station
-    if (bike.stationId !== rentalData.stationId) {
-      throw new Error(`Bike ${rentalData.bikeId} is not available at station ${rentalData.stationId}`);
-    }
+    // Basic pricing logic based on rental plan
+    let price = 0;
+    let planName = "";
     
-    // Check if station has available bikes
-    if (station.availableBikes <= 0) {
-      throw new Error(`No bikes available at station ${rentalData.stationId}`);
-    }
-    
-    // Determine price based on plan
-    let price = "R$ 8,00";
-    let planName = "Por Hora";
-    
-    switch (rentalData.planId) {
-      case 1: // Hourly
-        price = "R$ 8,00";
-        planName = "Por Hora (1 hora)";
+    switch (rentalData.plan) {
+      case "hourly":
+        price = 10;
+        planName = "Hourly (R$10/hour)";
         break;
-      case 2: // Daily
-        price = "R$ 30,00";
-        planName = "Diária (24 horas)";
+      case "daily":
+        price = 30;
+        planName = "Daily (R$30/day)";
         break;
-      case 3: // Weekly
-        price = "R$ 120,00";
-        planName = "Semanal (7 dias)";
+      case "weekly":
+        price = 100;
+        planName = "Weekly (R$100/week)";
         break;
+      default:
+        price = 10; // Default to hourly
+        planName = "Hourly (R$10/hour)";
     }
     
     // Create the rental record
     const result = await db.insert(rentals).values({
       ...rentalData,
       status: "active",
-      price,
+      price: price.toString(),
       startTime: new Date(),
     }).returning();
     
@@ -218,13 +211,171 @@ export class DatabaseStorage implements IStorage {
       stationName: station.name,
       planName,
       // Keep the original Date objects but add formatted versions for display
-      startTimeFormatted: format(new Date(rental.startTime), "dd/MM/yyyy, HH:mm"),
-      endTimeFormatted: format(new Date(rental.endTime), "dd/MM/yyyy, HH:mm"),
+      startTimeFormatted: format(rental.startTime!, "MMM d, yyyy 'at' h:mm a"),
+      endTimeFormatted: rental.endTime ? format(rental.endTime, "MMM d, yyyy 'at' h:mm a") : null,
+      returnByFormatted: format(addDays(rental.startTime!, 1), "MMM d, yyyy 'at' h:mm a"),
     };
     
     return displayRental as unknown as Rental;
   }
+  
+  // Ride stats operations
+  async getRideStats(userId: number): Promise<RideStats[]> {
+    return await db.select().from(rideStats).where(eq(rideStats.userId, userId)).orderBy(rideStats.date);
+  }
+  
+  async getRideStatsByDate(userId: number, startDate: Date, endDate?: Date): Promise<RideStats[]> {
+    let query = db
+      .select()
+      .from(rideStats)
+      .where(eq(rideStats.userId, userId));
+      
+    if (endDate) {
+      query = query.where(and(
+        rideStats.date >= startDate.toISOString().split('T')[0],
+        rideStats.date <= endDate.toISOString().split('T')[0]
+      ));
+    } else {
+      query = query.where(rideStats.date >= startDate.toISOString().split('T')[0]);
+    }
+      
+    return await query.orderBy(rideStats.date);
+  }
+  
+  async getRideStat(id: number): Promise<RideStats | undefined> {
+    const result = await db.select().from(rideStats).where(eq(rideStats.id, id));
+    return result[0];
+  }
+  
+  async createRideStat(rideStatData: InsertRideStats): Promise<RideStats> {
+    const result = await db.insert(rideStats).values(rideStatData).returning();
+    return result[0];
+  }
+  
+  // User performance goals operations
+  async getUserPerformanceGoals(userId: number): Promise<UserPerformanceGoals | undefined> {
+    const result = await db.select().from(userPerformanceGoals).where(eq(userPerformanceGoals.userId, userId));
+    return result[0];
+  }
+  
+  async createUserPerformanceGoals(goalsData: InsertUserPerformanceGoals): Promise<UserPerformanceGoals> {
+    const result = await db.insert(userPerformanceGoals).values({
+      ...goalsData,
+      updatedAt: new Date()
+    }).returning();
+    return result[0];
+  }
+  
+  async updateUserPerformanceGoals(id: number, goalsData: Partial<InsertUserPerformanceGoals>): Promise<UserPerformanceGoals> {
+    const result = await db
+      .update(userPerformanceGoals)
+      .set({
+        ...goalsData,
+        updatedAt: new Date()
+      })
+      .where(eq(userPerformanceGoals.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  // Achievement operations
+  async getAchievementTypes(): Promise<AchievementType[]> {
+    return await db.select().from(achievementTypes);
+  }
+  
+  async getUserAchievements(userId: number): Promise<(UserAchievement & { achievementType: AchievementType })[]> {
+    const userAchievementsWithTypes = await db
+      .select({
+        id: userAchievements.id,
+        userId: userAchievements.userId,
+        achievementTypeId: userAchievements.achievementTypeId,
+        earnedAt: userAchievements.earnedAt,
+        achievementType: achievementTypes
+      })
+      .from(userAchievements)
+      .innerJoin(achievementTypes, eq(userAchievements.achievementTypeId, achievementTypes.id))
+      .where(eq(userAchievements.userId, userId));
+    
+    return userAchievementsWithTypes;
+  }
+  
+  async createUserAchievement(achievementData: InsertUserAchievement): Promise<UserAchievement> {
+    const result = await db.insert(userAchievements).values(achievementData).returning();
+    return result[0];
+  }
+  
+  // Performance analytics
+  async getUserWeeklyStats(userId: number): Promise<{
+    totalDistance: number;
+    totalDuration: number;
+    totalCalories: number;
+    ridesCount: number;
+    avgSpeed: number;
+  }> {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const stats = await this.getRideStatsByDate(userId, startOfWeek);
+    
+    if (stats.length === 0) {
+      return {
+        totalDistance: 0,
+        totalDuration: 0,
+        totalCalories: 0,
+        ridesCount: 0,
+        avgSpeed: 0
+      };
+    }
+    
+    const totalDistance = stats.reduce((sum, stat) => sum + stat.distance, 0);
+    const totalDuration = stats.reduce((sum, stat) => sum + stat.duration, 0);
+    const totalCalories = stats.reduce((sum, stat) => sum + stat.caloriesBurned, 0);
+    
+    return {
+      totalDistance,
+      totalDuration,
+      totalCalories,
+      ridesCount: stats.length,
+      avgSpeed: totalDuration > 0 ? totalDistance / (totalDuration / 3600) : 0 // km/h
+    };
+  }
+  
+  async getUserMonthlyStats(userId: number): Promise<{
+    totalDistance: number;
+    totalDuration: number;
+    totalCalories: number;
+    ridesCount: number;
+    avgSpeed: number;
+  }> {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    const stats = await this.getRideStatsByDate(userId, startOfMonth);
+    
+    if (stats.length === 0) {
+      return {
+        totalDistance: 0,
+        totalDuration: 0,
+        totalCalories: 0,
+        ridesCount: 0,
+        avgSpeed: 0
+      };
+    }
+    
+    const totalDistance = stats.reduce((sum, stat) => sum + stat.distance, 0);
+    const totalDuration = stats.reduce((sum, stat) => sum + stat.duration, 0);
+    const totalCalories = stats.reduce((sum, stat) => sum + stat.caloriesBurned, 0);
+    
+    return {
+      totalDistance,
+      totalDuration,
+      totalCalories,
+      ridesCount: stats.length,
+      avgSpeed: totalDuration > 0 ? totalDistance / (totalDuration / 3600) : 0 // km/h
+    };
+  }
 }
 
-// Initialize the database storage
 export const storage = new DatabaseStorage();
