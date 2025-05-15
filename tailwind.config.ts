@@ -10,6 +10,17 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      backgroundColor: {
+        'primary': 'var(--primary)',
+        'secondary': 'var(--secondary)',
+        'background': 'var(--background)',
+      },
+      textColor: {
+        'primary': 'var(--primary)',
+        'secondary': 'var(--secondary)',
+        'default': 'var(--text)',
+        'accent': 'var(--accent)',
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

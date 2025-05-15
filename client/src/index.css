@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --primary: #000000;
+  --secondary: #27AE60;
+  --background: #FFFFFF;
+  --text: #333333;
+  --accent: #2D9CDB;
+}
+
+.dark {
+  --primary: #000000;
+  --secondary: #2ECC71;
+  --background: #121212;
+  --text: #E0E0E0;
+  --accent: #3498DB;
+}
+
 /* Animações personalizadas */
 @keyframes fadeIn {
   from {

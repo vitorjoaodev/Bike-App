@@ -5,11 +5,13 @@ type Theme = 'light' | 'dark';
 type ThemeContextType = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: 'light',
   setTheme: () => {},
+  toggleTheme: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -24,12 +26,21 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   
   // Try to get the saved theme or use system preference
   const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'light';
+    
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     return savedTheme || (prefersDarkMode ? 'dark' : 'light');
   });
 
+  // Toggle between light and dark themes
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
+
   // Apply theme to document
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const htmlElement = document.documentElement;
     
     if (theme === 'dark') {
@@ -42,9 +53,23 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Initial theme setup
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const htmlElement = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDarkMode)) {
+      htmlElement.classList.add('dark');
+      setTheme('dark');
+    }
+  }, []);
+
   const value = {
     theme,
     setTheme,
+    toggleTheme,
   };
 
   return (

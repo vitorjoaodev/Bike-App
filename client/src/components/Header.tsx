@@ -9,11 +9,7 @@ type HeaderProps = {
 };
 
 export default function Header({ onProfileClick }: HeaderProps) {
-  const { theme, setTheme } = useTheme();
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
+  const { toggleTheme } = useTheme();
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white dark:bg-zinc-900 shadow-md z-10 px-4 py-3 flex justify-between items-center">
