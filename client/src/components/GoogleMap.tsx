@@ -224,8 +224,10 @@ export default function GoogleMapComponent({
     });
   };
 
+  console.log("API Key:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+  
   return (
-    <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}>
+    <LoadScript googleMapsApiKey="AIzaSyC5ixXOxTc9wIJ4VaaDmOhN3HAJMRee9yA">
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={selectedBike ? selectedBike.location : userLocation || center}
