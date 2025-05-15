@@ -201,6 +201,17 @@
   border: none !important;
 }
 
+/* Estilos do Leaflet */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 import Header from "@/components/Header";
-import GoogleMapComponent from "@/components/GoogleMap";
+import Map from "@/components/Map";
 import BottomSheet from "@/components/BottomSheet";
 import ProfileMenu from "@/components/ProfileMenu";
 import StationCard from "@/components/StationCard";
@@ -234,7 +234,7 @@ export default function Home() {
     <div className="h-screen overflow-hidden relative">
       <Header onProfileClick={toggleProfileMenu} />
       
-      {stationViewTab === 'map' && <GoogleMapComponent stations={stations} onStationSelect={handleStationSelect} />}
+      {stationViewTab === 'map' && <Map stations={stations} onStationSelect={handleStationSelect} />}
       
       <BottomSheet expanded={sheetExpanded} onToggle={() => setSheetExpanded(!sheetExpanded)}>
         {currentView === 'stations' && (
