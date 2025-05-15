@@ -61,7 +61,7 @@ export default function RentalPlan({ plan, selected, onClick }: RentalPlanProps)
           <div className="flex flex-col items-end">
             {discount > 0 && (
               <span className="text-xs line-through text-gray-400 mb-1">
-                {`R$ ${parseFloat(plan.price.replace('R$ ', '').replace(',', '.').replace('/hora', '').replace('/dia', '').replace('/semana', '')) * (100 / (100 - discount))},00`}
+                {`R$ ${(parseFloat(plan.price.replace('R$ ', '').replace(',', '.').replace('/hora', '').replace('/dia', '').replace('/semana', '')) * (100 / (100 - discount))).toFixed(2).replace('.', ',')}`}
               </span>
             )}
             <span className="font-semibold text-lg text-secondary">{plan.price}</span>
