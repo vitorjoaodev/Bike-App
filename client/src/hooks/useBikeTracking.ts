@@ -1,18 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-interface BikeLocation {
-  bikeId: number;
-  location: {
-    lat: number;
-    lng: number;
-  };
-  speed: number;
-  battery: number;
-  isMoving: boolean;
+type BikeLocation = {
+  lat: number;
+  lng: number;
   timestamp: number;
-}
+};
 
-interface TrackedBike {
+type TrackedBike = {
   bikeId: number;
   userId: number;
   rentalId: number;
@@ -23,185 +17,82 @@ interface TrackedBike {
   speed: number;
   battery: number;
   isMoving: boolean;
-  path: Array<{
-    lat: number;
-    lng: number;
-    timestamp: number;
-  }>;
-}
+  path: BikeLocation[];
+};
 
-interface BikeTrackingOptions {
-  userId: number;
-  onLocationUpdate?: (location: BikeLocation) => void;
-  onConnectionChange?: (isConnected: boolean) => void;
-  onError?: (error: string) => void;
-}
-
-export function useBikeTracking(options: BikeTrackingOptions) {
-  const { userId, onLocationUpdate, onConnectionChange, onError } = options;
-  
-  const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+/**
+ * Hook para rastreamento em tempo real de bicicletas via WebSocket
+ */
+export default function useBikeTracking(bikeId?: number) {
+  const [bike, setBike] = useState<TrackedBike | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [trackingData, setTrackingData] = useState<Map<number, TrackedBike>>(new Map());
-  
-  // Inicializa a conexão WebSocket
+  const [isConnecting, setIsConnecting] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+
   useEffect(() => {
+    if (!bikeId) return;
+
+    setIsConnecting(true);
+    setError(null);
+
+    // Determinar URL do WebSocket com base no ambiente
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+    // Criar conexão WebSocket
     const ws = new WebSocket(wsUrl);
-    
+    wsRef.current = ws;
+
     ws.onopen = () => {
       console.log('WebSocket connection established');
-      setIsConnected(true);
-      onConnectionChange?.(true);
-      
-      // Autenticação inicial
-      ws.send(JSON.stringify({
-        type: 'auth',
-        userId
-      }));
+      setIsConnecting(false);
+      // Enviar mensagem para iniciar o rastreamento desta bicicleta específica
+      ws.send(JSON.stringify({ type: 'subscribe', bikeId }));
     };
-    
-    ws.onclose = () => {
-      console.log('WebSocket connection closed');
-      setIsConnected(false);
-      onConnectionChange?.(false);
-    };
-    
-    ws.onerror = (event) => {
-      console.error('WebSocket error:', event);
-      setError('Falha na conexão WebSocket');
-      onError?.('Falha na conexão WebSocket');
-    };
-    
+
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         
-        switch (data.type) {
-          case 'auth_success':
-            console.log('Authentication successful');
-            break;
-          
-          case 'tracking_data':
-            // Atualiza o estado com os dados de bicicletas
-            const newTrackingData = new Map(trackingData);
-            data.bikes.forEach((bike: TrackedBike) => {
-              newTrackingData.set(bike.bikeId, bike);
-            });
-            setTrackingData(newTrackingData);
-            break;
-          
-          case 'location_update':
-            // Atualiza o estado de localização
-            const updatedTrackingData = new Map(trackingData);
-            
-            data.bikes.forEach((update: BikeLocation) => {
-              const existing = updatedTrackingData.get(update.bikeId);
-              
-              if (existing) {
-                existing.location = update.location;
-                existing.speed = update.speed;
-                existing.battery = update.battery;
-                existing.isMoving = update.isMoving;
-                
-                // Adiciona ao histórico de caminho
-                existing.path.push({
-                  ...update.location,
-                  timestamp: update.timestamp
-                });
-                
-                // Limita o tamanho do histórico (mantém últimos 100 pontos)
-                if (existing.path.length > 100) {
-                  existing.path = existing.path.slice(-100);
-                }
-                
-                updatedTrackingData.set(update.bikeId, existing);
-              }
-              
-              // Chama o callback se fornecido
-              onLocationUpdate?.(update);
-            });
-            
-            setTrackingData(updatedTrackingData);
-            break;
-          
-          case 'tracking_started':
-            console.log(`Started tracking bike ${data.bikeId}`);
-            break;
-          
-          case 'tracking_stopped':
-            console.log(`Stopped tracking bike ${data.bikeId}`);
-            // Remove a bicicleta dos dados de rastreamento
-            const trackingDataWithoutBike = new Map(trackingData);
-            trackingDataWithoutBike.delete(data.bikeId);
-            setTrackingData(trackingDataWithoutBike);
-            break;
-          
-          case 'error':
-            console.error('Server error:', data.message);
-            setError(data.message);
-            onError?.(data.message);
-            break;
+        if (data.type === 'bikeUpdate' && data.bike) {
+          // Atualizar os dados da bicicleta
+          setBike(data.bike);
         }
       } catch (err) {
         console.error('Error parsing WebSocket message:', err);
       }
     };
-    
-    setSocket(ws);
-    
-    // Cleanup na desmontagem
+
+    ws.onerror = (event) => {
+      console.error('WebSocket error:', event);
+      setError('Erro na conexão WebSocket. Tente novamente mais tarde.');
+      setIsConnecting(false);
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+      setIsConnecting(false);
+    };
+
+    // Limpar a conexão quando o componente for desmontado
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'unsubscribe', bikeId }));
+        wsRef.current.close();
       }
     };
-  }, [userId, onLocationUpdate, onConnectionChange, onError]);
-  
-  // Inicia o rastreamento de uma bicicleta
-  const startTracking = useCallback((bikeId: number, rentalId: number, startLocation: { lat: number; lng: number }) => {
-    if (socket && isConnected) {
-      socket.send(JSON.stringify({
-        type: 'start_tracking',
-        bikeId,
-        rentalId,
-        startLocation
-      }));
-    } else {
-      setError('WebSocket não está conectado');
-      onError?.('WebSocket não está conectado');
-    }
-  }, [socket, isConnected, onError]);
-  
-  // Interrompe o rastreamento de uma bicicleta
-  const stopTracking = useCallback((bikeId: number) => {
-    if (socket && isConnected) {
-      socket.send(JSON.stringify({
-        type: 'stop_tracking',
-        bikeId
+  }, [bikeId]);
+
+  // Função para simular um destino (ponto final da viagem)
+  const setDestination = (lat: number, lng: number) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && bikeId) {
+      wsRef.current.send(JSON.stringify({ 
+        type: 'setDestination', 
+        bikeId, 
+        destination: { lat, lng } 
       }));
     }
-  }, [socket, isConnected]);
-  
-  // Define um destino para a bicicleta (para simulação)
-  const setDestination = useCallback((bikeId: number, destination: { lat: number; lng: number }) => {
-    if (socket && isConnected) {
-      socket.send(JSON.stringify({
-        type: 'set_destination',
-        bikeId,
-        destination
-      }));
-    }
-  }, [socket, isConnected]);
-  
-  return {
-    isConnected,
-    error,
-    trackingData: Array.from(trackingData.values()),
-    startTracking,
-    stopTracking,
-    setDestination
   };
+
+  return { bike, error, isConnecting, setDestination };
 }
