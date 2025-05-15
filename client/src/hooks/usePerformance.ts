@@ -94,15 +94,21 @@ export function useRideHistory() {
 export function useSetGoals() {
   const queryClient = useQueryClient();
   
-  return useMutation({
-    mutationFn: (data: SetGoalsData) => {
-      return apiRequest('/api/performance/goals', {
+  return useMutation<PerformanceGoals, unknown, SetGoalsData>({
+    mutationFn: async (data: SetGoalsData) => {
+      const response = await fetch('/api/performance/goals', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: {
           'Content-Type': 'application/json',
         },
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update goals');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       // Invalidate necessary queries when goals are updated
