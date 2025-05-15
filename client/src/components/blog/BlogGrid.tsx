@@ -1,5 +1,5 @@
 import React from 'react';
-import { BlogPostSummary } from '../../../shared/types/blog';
+import { BlogPostSummary } from '../../data/mockBlogData';
 import BlogCard from './BlogCard';
 
 interface BlogGridProps {

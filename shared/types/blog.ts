@@ -1,5 +1,3 @@
-// Tipos para o sistema de blog
-
 export interface BlogPost {
   id: string;
   slug: string;
