@@ -71,7 +71,7 @@ export default function BlogPost() {
         .filter(p => 
           p.id !== post.id && 
           (p.category.id === post.category.id || 
-           p.tags.some(tag => post.tags.includes(tag)))
+           p.tags.some((tag: string) => post.tags.includes(tag)))
         )
         .slice(0, 3)
     : [];
@@ -161,7 +161,7 @@ export default function BlogPost() {
             {/* Tags */}
             <div className="mx-auto mt-12 max-w-3xl">
               <div className="flex flex-wrap gap-2">
-                {post.tags.map(tag => (
+                {post.tags.map((tag: string) => (
                   <a 
                     key={tag}
                     href={`/blog/tag/${tag}`}
