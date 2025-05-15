@@ -252,7 +252,10 @@ export default function GoogleMapComponent({
         {stations.map((station) => (
           <Marker
             key={station.id}
-            position={{ lat: parseFloat(station.lat), lng: parseFloat(station.lng) }}
+            position={{ 
+              lat: typeof station.lat === 'string' ? parseFloat(station.lat) : station.lat, 
+              lng: typeof station.lng === 'string' ? parseFloat(station.lng) : station.lng 
+            }}
             onClick={() => {
               setSelectedStation(station);
               onStationSelect(station);
@@ -276,7 +279,10 @@ export default function GoogleMapComponent({
         {/* Janela de informações da estação selecionada */}
         {selectedStation && (
           <InfoWindow
-            position={{ lat: parseFloat(selectedStation.lat), lng: parseFloat(selectedStation.lng) }}
+            position={{ 
+              lat: typeof selectedStation.lat === 'string' ? parseFloat(selectedStation.lat) : selectedStation.lat, 
+              lng: typeof selectedStation.lng === 'string' ? parseFloat(selectedStation.lng) : selectedStation.lng 
+            }}
             onCloseClick={() => setSelectedStation(null)}
           >
             <div className="p-3 max-w-xs">
@@ -315,10 +321,13 @@ export default function GoogleMapComponent({
             position={selectedBike.location}
             icon={{
               url: selectedBike.isMoving 
-                ? 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
-                : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                ? '/assets/bike-moving-marker.svg' 
+                : '/assets/bike-stopped-marker.svg',
+              scaledSize: new window.google.maps.Size(42, 42),
+              anchor: new window.google.maps.Point(21, 21)
             }}
-            animation={selectedBike.isMoving ? google.maps.Animation.BOUNCE : undefined}
+            animation={selectedBike.isMoving ? window.google.maps.Animation.BOUNCE : undefined}
+            title={selectedBike.isMoving ? "Bicicleta em movimento" : "Bicicleta parada"}
           />
         )}
         
@@ -330,8 +339,13 @@ export default function GoogleMapComponent({
               polylineOptions: {
                 strokeColor: '#27AE60',
                 strokeWeight: 5,
+                strokeOpacity: 0.8,
+                zIndex: 1
               },
               suppressMarkers: true,
+              markerOptions: {
+                zIndex: 2
+              }
             }}
           />
         )}
