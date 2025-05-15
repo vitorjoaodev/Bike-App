@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertRentalSchema } from "@shared/schema";
 import { z } from "zod";
 import { format, add } from "date-fns";
+import { setupWebSocketServer } from './websocket-simple';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all stations
@@ -94,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create rental
       const rental = await storage.createRental({
         ...rentalData,
-        endTime: endTime.toISOString(),
+        endTime: endTime,
       });
       
       // Decrease available bikes at the station
@@ -137,5 +138,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Inicializa o servidor WebSocket para rastreamento em tempo real
+  setupWebSocketServer(httpServer);
+  
   return httpServer;
 }

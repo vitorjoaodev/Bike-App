@@ -661,11 +661,19 @@ export default function Home() {
             
             <div className="space-y-3 slide-in" style={{animationDelay: '0.4s'}}>
               <Button 
-                className="w-full btn-primary"
+                className="w-full btn-primary mb-3"
                 onClick={navigateToStation}
               >
                 <span className="material-icons mr-2">navigation</span>
                 Navegar até a Estação
+              </Button>
+              
+              <Button 
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                onClick={() => window.location.href = `/tracking/${currentRental.bikeId}`}
+              >
+                <span className="material-icons mr-2">location_on</span>
+                Rastrear Bicicleta
               </Button>
               
               <Button 
