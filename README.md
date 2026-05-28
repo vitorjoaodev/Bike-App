@@ -127,4 +127,5 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo LICENSE para d
 
 ---
 
-Desenvolvido com 💚 por [Seu Nome/Equipe]
+Desenvolvido por João Vitor Belasque
+joaovitorbelasque@outlook.com
